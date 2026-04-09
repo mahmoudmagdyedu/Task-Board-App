@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — لوحة المهام التفاعلية</title>
+  <meta name="description" content="لوحة مهام Kanban تفاعلية مبنية بـ TypeScript — سحب وإفلات، تحقق من البيانات، وتخزين محلي." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+          colors: {
+            primary: {
+              50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',
+              500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .gradient-header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%); }
+    .task-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .task-card:hover { transform: translateY(-2px); }
+    .drop-zone { transition: background-color 0.2s, box-shadow 0.2s; min-height: 120px; }
+    @keyframes slideIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+    .animate-slide-in { animation: slideIn 0.3s ease; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="gradient-header text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">📋</span>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight">TaskFlow</h1>
+          <p class="text-primary-200 text-xs sm:text-sm">لوحة المهام التفاعلية</p>
+        </div>
+      </div>
+      <button id="btn-add-task" class="flex items-center gap-2 bg-white text-primary-700 font-bold text-sm px-5 py-2.5 rounded-full shadow-lg hover:bg-primary-50 transition-colors">
+        <span class="text-lg">+</span> مهمة جديدة
+      </button>
+    </div>
+  </header>
+
+  <!-- Board -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+
+      <!-- Column: To Do -->
+      <div class="bg-white/60 backdrop-blur rounded-2xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📝</span>
+            <h2 class="font-black text-slate-700">المهام الجديدة</h2>
+          </div>
+          <span id="todo-count" class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+        </div>
+        <div id="todo-tasks" class="drop-zone space-y-3 rounded-xl p-1" data-status="todo"></div>
+      </div>
+
+      <!-- Column: In Progress -->
+      <div class="bg-white/60 backdrop-blur rounded-2xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚡</span>
+            <h2 class="font-black text-slate-700">قيد التنفيذ</h2>
+          </div>
+          <span id="in-progress-count" class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+        </div>
+        <div id="in-progress-tasks" class="drop-zone space-y-3 rounded-xl p-1" data-status="in-progress"></div>
+      </div>
+
+      <!-- Column: Done -->
+      <div class="bg-white/60 backdrop-blur rounded-2xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">✅</span>
+            <h2 class="font-black text-slate-700">مكتملة</h2>
+          </div>
+          <span id="done-count" class="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+        </div>
+        <div id="done-tasks" class="drop-zone space-y-3 rounded-xl p-1" data-status="done"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+    <div class="animate-slide-in bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <h3 id="modal-title" class="text-lg font-black text-slate-800 mb-5">إضافة مهمة جديدة</h3>
+      <form id="task-form" class="space-y-4">
+        <div>
+          <label for="input-title" class="block text-sm font-bold text-slate-600 mb-1.5">عنوان المهمة *</label>
+          <input id="input-title" type="text" placeholder="مثال: تصميم صفحة الهبوط" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent outline-none transition" />
+          <p id="error-title" class="text-red-500 text-xs mt-1 min-h-[16px]"></p>
+        </div>
+        <div>
+          <label for="input-description" class="block text-sm font-bold text-slate-600 mb-1.5">الوصف (اختياري)</label>
+          <textarea id="input-description" rows="3" placeholder="وصف مختصر للمهمة..." class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent outline-none transition resize-none"></textarea>
+          <p id="error-description" class="text-red-500 text-xs mt-1 min-h-[16px]"></p>
+        </div>
+        <div>
+          <label for="input-priority" class="block text-sm font-bold text-slate-600 mb-1.5">الأولوية</label>
+          <select id="input-priority" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent outline-none transition bg-white">
+            <option value="low">🟢 منخفضة</option>
+            <option value="medium" selected>🟡 متوسطة</option>
+            <option value="high">🔴 عالية</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button id="btn-submit" type="submit" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-xl transition-colors">إضافة</button>
+          <button id="btn-cancel" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl transition-colors">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center py-6 text-slate-400 text-xs">
+    <p>Built with <strong>TypeScript</strong> & <strong>Tailwind CSS</strong> — <a href="https://github.com/mahmoudmagdyedu/Task-Board-App" target="_blank" class="text-primary-500 hover:underline">Source Code</a></p>
+  </footer>
+
+  <script src="dist/app.js"></script>
+</body>
+</html>
