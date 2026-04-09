@@ -1,0 +1,14 @@
+{
+  "name": "task-board-app",
+  "version": "1.0.0",
+  "description": "Interactive Kanban task board built with TypeScript and Tailwind CSS",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "author": "Mahmoud Magdy",
+  "license": "MIT"
+}
