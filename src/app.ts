@@ -49,7 +49,7 @@ const STATUS_CONFIG: Record<Status, { label: string; icon: string }> = {
 
 // ── Storage Manager ─────────────────────────────────────────
 
-class StorageManager {
+class TaskStorage {
   static load(): Task[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -102,7 +102,7 @@ class TaskBoard {
   private draggedTaskId: string | null = null;
 
   constructor() {
-    this.tasks = StorageManager.load();
+    this.tasks = TaskStorage.load();
     this.init();
   }
 
@@ -241,7 +241,7 @@ class TaskBoard {
     if (task && task.status !== newStatus) {
       const oldStatus = task.status;
       task.status = newStatus;
-      StorageManager.save(this.tasks);
+      TaskStorage.save(this.tasks);
       this.renderColumn(oldStatus);
       this.renderColumn(newStatus);
     }
@@ -341,7 +341,7 @@ class TaskBoard {
       createdAt: new Date().toISOString(),
     };
     this.tasks.unshift(newTask);
-    StorageManager.save(this.tasks);
+    TaskStorage.save(this.tasks);
     this.renderColumn(Status.Todo);
   }
 
@@ -351,7 +351,7 @@ class TaskBoard {
     task.title = title;
     task.description = description;
     task.priority = priority;
-    StorageManager.save(this.tasks);
+    TaskStorage.save(this.tasks);
     this.renderColumn(task.status);
   }
 
@@ -361,7 +361,7 @@ class TaskBoard {
     if (!confirm('هل تريد حذف هذه المهمة؟')) return;
     const status = task.status;
     this.tasks = this.tasks.filter((t) => t.id !== taskId);
-    StorageManager.save(this.tasks);
+    TaskStorage.save(this.tasks);
     this.renderColumn(status);
   }
 
